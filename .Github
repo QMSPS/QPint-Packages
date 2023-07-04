@@ -1,0 +1,33 @@
+Hi,
+
+As you can read in the link, that you called "[the support forum](https://www.portablefreeware.com/forums/viewtopic.php?t=22888&sid=0c84510faffe2678f39922f13fc16729&start=30)" people think the project is death and repo's are not working anymore. I can understand them, but I was positively surprised when I did see your Pint project on Github and I was giving it a try.
+
+As discussed on the forum, most packages are outdated and most scripts on "[Pint Packages](https://github.com/vensko/pint-packages)" are not working anymore.
+
+So I tried to understand the code, and how the import scripts are creating the package databases. And after some time (sometime's really frustrating), I started to understand it more and more, with the result...
+
+I get a working, and automated updating database for:
+- NirSoft
+- Portable Apps
+- Sordum
+- SyMenu
+- SysInternals
+- Portable Freeware (arround 850 packages, because most are HTML pages or death, but 850 is more then 0)
+
+Al this repository's are working and I created a automation, to update the repository ini databases 4 time a day. Are you interested to replace your public, but not updated databases with daily updated databases?
+
+There is only one small difference, because I also did some small source code changes my ini database files are without the repository names and and no combined ini file is used. 
+
+I changed it to work like "pint.exe SuMenu search "7-zip", "pint.exe PortableApps install "LibreOffice". so if a package was found in a other database, I don't deny it because it's already in a other database. Because every repository has it's own database.
+
+! was thinking to create 2 public database, one with my changes and 1 for your project. But it's a intensive job to run all the repository database updates, multiple time's of the day. So I decided to don't do that, and just want to share the separated repository ini file databases. But you and others, can simply create a combine script, that can create one ini file database.
+
+
+I want to say, it's a verry cool project you started and for me it's now working 6 repository's and mostly without any problems. And I hope we can bring this awesome project back to life.
+
+
+I like to hear from, and I hope people will start using it again.
+
+Kind regards,
+Arjen Kocken [ARKO]
+QMSPS, QiQQ

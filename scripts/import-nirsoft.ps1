@@ -2,32 +2,33 @@
 
 $siteUrl = 'https://www.nirsoft.net'
 $baseUrl = $siteUrl + '/utils/';
-$content = $client.DownloadString($baseUrl) -replace '<!--(.+?)-->',''
+$content = $client.DownloadString($baseUrl) -replace '<!--(.+?)-->', ''
 $matches = [regex]::Matches($content, '<a class="filetitle" href="(.+?)"')
-$targetDir = $PSScriptRoot + '\..\packages\nirsoft.net'
+$targetDir = $PSScriptRoot + '\..\packages\nirsoft'
 
-ni $targetDir -type directory -ea 0 | out-null
-del (join-path $targetDir '*.ini')
+ni $targetDir -type directory -ea 0 | Out-Null
+del (Join-Path $targetDir '*.ini')
 
 foreach ($match in $matches) {
 
-	$id = 'nirsoft-' + [IO.Path]::GetFileNameWithoutExtension($match.groups[1].value)
+	#$id = 'nirsoft-' + [IO.Path]::GetFileNameWithoutExtension($match.groups[1].value)
+	$id = '' + [IO.Path]::GetFileNameWithoutExtension($match.groups[1].value)
 	$id = $id.replace('_', '-')
 
 	$uri = $match.groups[1].value
 	$url = $baseUrl + $uri
 
-	write-host $id.padright(35, ' ') ' ' -nonewline
+	Write-Host $id.padright(35, ' ') ' ' -NoNewline
 
 	try {
 		$appContent = $client.DownloadString($url);
 
-		$link = [regex]::Matches($appContent, 'class="downloadline" href="(((?!x64)[^"])+\.zip)"') | select -first 1
-		$link64 = [regex]::Matches($appContent, 'class="downloadline" href="([^"]+-x64\.zip)"') | select -first 1
+		$link = [regex]::Matches($appContent, 'class="downloadline" href="(((?!x64)[^"])+\.zip)"') | select -First 1
+		$link64 = [regex]::Matches($appContent, 'class="downloadline" href="([^"]+-x64\.zip)"') | select -First 1
 
 		if (!$link -and !$link64) {
-		    write-host 'LINK NOT FOUND' -f red
-		    continue
+			Write-Host 'LINK NOT FOUND' -f red
+			continue
 		}
 
 		if ($link) {
@@ -38,21 +39,25 @@ foreach ($match in $matches) {
 				$res = pint-make-request $link
 
 				if ($res.ContentType.contains('text/html')) {
-					write-host 'HTML page' $link -f red
+					Write-Host 'HTML page' $link -f red
 					$link = ''
-				} else {
+				}
+				else {
 					$link = $res.ResponseUri
 				}
-			} catch {
+			}
+			catch {
 				$msg = $_.Exception.InnerException.Message
 
 				if ($msg.contains('timed out')) {
-					write-host $msg $link -f yellow
-				} else {
-					write-host $msg $link -f red
+					Write-Host $msg $link -f yellow
+				}
+				else {
+					Write-Host $msg $link -f red
 					$link = ''
 				}
-			} finally {
+			}
+			finally {
 				if ($res) { $res.close() }
 			}
 		}
@@ -65,21 +70,25 @@ foreach ($match in $matches) {
 				$res = pint-make-request $link64
 
 				if ($res.ContentType.contains('text/html')) {
-					write-host 'HTML page' $link64 -f red
+					Write-Host 'HTML page' $link64 -f red
 					$link64 = ''
-				} else {
+				}
+				else {
 					$link64 = $res.ResponseUri
 				}
-			} catch {
+			}
+			catch {
 				$msg = if ($_.Exception.InnerException) { $_.Exception.InnerException.Message } else { $_.Exception.Message }
 
 				if ($msg.contains('timed out')) {
-					write-host $msg $link64 -f yellow
-				} else {
-					write-host $msg $link64 -f red
+					Write-Host $msg $link64 -f yellow
+				}
+				else {
+					Write-Host $msg $link64 -f red
 					$link64 = ''
 				}
-			} finally {
+			}
+			finally {
 				if ($res) { $res.close() }
 			}
 		}
@@ -88,16 +97,23 @@ foreach ($match in $matches) {
 			continue
 		}
 
-		write-host 'OK' -f green
+		Write-Host 'OK' -f green
 
 		$ini = @()
-		if ($link) { $ini += "dist = $link" }
-		if ($link64) { $ini += "dist64 = $link64" }
-		$ini += "keep = *.cfg"
+		if ($link) {
+			$ini += 'dist' + ' ' + '=' + ' ' + "$link"
+		}
 
-		$ini -join "`r`n" | out-file (join-path $targetDir "$id.ini") -encoding ascii
+		if ($link64) {
+			$ini += 'dist64' + ' ' + '=' + ' ' + "$link64"
+		}
+		$ini += 'keep' + ' ' + '=' + ' ' + '*.cfg'
 
-	} catch {
-		write-host $_.Exception.Message -f red
+
+		$ini -join "`r`n" | Out-File (Join-Path $targetDir "$id.ini") -Encoding ascii
+
+	}
+ catch {
+		Write-Host $_.Exception.Message -f red
 	}
 }

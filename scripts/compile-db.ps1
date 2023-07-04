@@ -1,26 +1,35 @@
-$baseDir = $PSScriptRoot + '\..\'
+#$baseDir = $PSScriptRoot + '.\..\packages\'
+$baseDir = '.\..\'
 $packagesIni = $baseDir + 'packages.ini'
 
 $dirs = @(
-	($baseDir + 'packages\portableapps.com'),
-	($baseDir + 'packages\ugmfree.it'),
-	($baseDir + 'packages\nirsoft.net'),
-	($baseDir + 'packages\sysinternals'),
-	($baseDir + 'packages\sordum.org'),
-	($baseDir + 'packages\pint-version-specific'),
-	($baseDir + 'packages\pint')
+	#($baseDir + 'packages\portableapps.com'),
+
+
+	#($baseDir + 'packages\nirsoft')
+	#($baseDir + 'packages\portableapps')
+	#($baseDir + 'packages\portablefreeware')
+	($baseDir + 'packages\sordum')
+	#($baseDir + 'packages\symenu')
+	#($baseDir + 'packages\sysinternals')
+
+
+
+
+	#($baseDir + 'packages\pint-version-specific'),
+	#($baseDir + 'packages\pint')
 )
 
-clear-content $packagesIni
+Clear-Content $packagesIni
 
 $index = @{}
 
-$dirs |% {
+$dirs | % {
 
 	$dir = gi $_
 
 	$ini = ''
-	dir "$_\*.ini" |% {
+	dir "$_\*.ini" | % {
 		$id = $_.basename
 		$config = [IO.File]::ReadAllText($_.fullname).trim()
 
@@ -31,14 +40,20 @@ $dirs |% {
 
 		$ini += $section
 
-		$key = $id -replace '[^\w]+',''
+		$key = $id -replace '[^\w]+', ''
 		$index[$key] = $section
 	}
 
-	$file = "$baseDir\packages-$($dir.basename).ini"
+	$file = "$baseDir\packagesdb\packages-$($dir.basename).ini"
 
-	$ini | out-file $file -encoding ascii
+	$ini | Out-File $file -Encoding ascii
 }
 
-$ini = $index.keys | sort |% { $index[$_] }
-$ini -join '' | out-file $packagesIni -encoding ascii
+
+$ini = $index.keys | sort | % { $index[$_] }
+$ini -join '' | Out-File $packagesIni -Encoding ascii
+
+# Cleanup ini files in repo directory's
+#foreach ($dir in $dirs) {
+#	Get-ChildItem -Path $dir -File -Recurse -Filter *.ini | remove-item -Force
+#}

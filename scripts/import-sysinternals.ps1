@@ -1,58 +1,62 @@
 . .\common.ps1
 
 $baseUrl = 'https://docs.microsoft.com/en-us/sysinternals/downloads/';
-$content = $client.DownloadString($baseUrl) -replace '<!--(.+?)-->',''
+$content = $client.DownloadString($baseUrl) -replace '<!--(.+?)-->', ''
 $matches = [regex]::Matches($content, 'href="(.+?)" data-linktype="relative-path"')
 $targetDir = $PSScriptRoot + '\..\packages\sysinternals'
 
-ni $targetDir -type directory -ea 0 | out-null
-del (join-path $targetDir '*.ini')
+ni $targetDir -type directory -ea 0 | Out-Null
+del (Join-Path $targetDir '*.ini')
 
-"dist = https://download.sysinternals.com/files/SysinternalsSuite.zip" | out-file (join-path $targetDir "sysinternals.ini") -encoding ascii
+"dist = https://download.sysinternals.com/files/SysinternalsSuite.zip" | Out-File (Join-Path $targetDir "sysinternals.ini") -Encoding ascii
 
 foreach ($match in $matches) {
 
-	$id = 'sysinternals-' + $match.groups[1].value
+	#$id = 'sysinternals-' + $match.groups[1].value
+	$id = '' + $match.groups[1].value
 	$uri = $match.groups[1].value
 	$url = $baseUrl + $uri
 
-	write-host $id.padright(35, ' ') ' ' -nonewline
+	Write-Host $id.padright(35, ' ') ' ' -NoNewline
 
 	try {
 		$appContent = $client.DownloadString($url);
 
-		[string]$link = [regex]::Matches($appContent, '[^"]+\.zip') | select -first 1
+		[string]$link = [regex]::Matches($appContent, '[^"]+\.zip') | select -First 1
 
 		if (!$link) {
-		    write-host 'LINK NOT FOUND' -f red
-		    continue
+			Write-Host 'LINK NOT FOUND' -f red
+			continue
 		}
 
 		try {
 			$res = pint-make-request $link
 
 			if (([string]$res.ContentType).contains('text/html')) {
-				write-host 'HTML page' $link -f red
+				Write-Host 'HTML page' $link -f red
 				continue
 			}
 
 			$res.close()
 
-			write-host 'OK' -f green
-		} catch {
+			Write-Host 'OK' -f green
+		}
+		catch {
 			$msg = if ($_.Exception.InnerException) { $_.Exception.InnerException.Message } else { $_.Exception.Message }
 
 			if ($msg.contains('timed out')) {
-				write-host $msg $link -f yellow
-			} else {
-				write-host $msg $link -f red
+				Write-Host $msg $link -f yellow
+			}
+			else {
+				Write-Host $msg $link -f red
 				continue
 			}
 		}
 
-		"dist = $link" | out-file (join-path $targetDir "$id.ini") -encoding ascii
+		"dist = $link" | Out-File (Join-Path $targetDir "$id.ini") -Encoding ascii
 
-	} catch {
-		write-host $_.Exception.Message -f red
+	}
+ catch {
+		Write-Host $_.Exception.Message -f red
 	}
 }

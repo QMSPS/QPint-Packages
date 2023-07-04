@@ -1,1 +1,0 @@
-This directory contains packages, linked to specific app versions. They should be upgraded to automatically parsed.
