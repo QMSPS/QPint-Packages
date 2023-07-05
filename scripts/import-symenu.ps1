@@ -1,14 +1,23 @@
 . .\common.ps1
 
+
+
+#C:\Users\arjen\Development\QPint-Packages\scripts\Required\SyMenu\SyMenu.exe
+#C:\Users\arjen\Development\QPint-Packages\Required\SyMenu\SyMenu.exe
+
 #$targetDir = $baseDir + '$Env:RunFolder\..\packages\symenu'
-$appdir = '$baseDir\..\Required\SyMenu'
+$appdir = Join-Path $baseDir '.\..\Required\SyMenu'
 $targetDir = '.\..\Packages\symenu'
-$spsDir = join-path $appdir '\ProgramFiles\SPSSuite\SyMenuSuite\_Cache'
+$spsDir = Join-Path $appdir '\ProgramFiles\SPSSuite\SyMenuSuite\_Cache\'
+
+del (Join-Path $targetDir '*.ini')
+del (join-path $spsDir '*.sps')
+del (join-path $spsDir '*.zip')
+
 #$spsDir = join-path $baseDir 'sps'
 <#
 $spsFile = join-path $baseDir 'sps.zip'
 $spsjson = join-path $baseDir 'sps.json'
-
 
 i $spsDir -type directory -ea 0 | out-null
 i $targetDir -type directory -ea 0 | out-null
@@ -24,19 +33,39 @@ unpack-zip $spsFile $spsDir
 
 php -r "error_reporting(0); echo json_encode(array_values(array_filter(array_map('simplexml_load_file', glob('sps/*.sps')))), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);" | out-file $spsJson -encoding ascii
 #>
+
+
+# Run SyMenu
+. $appdir\SyMenu.exe
+
+# Wait till DLL DLL file is saved
+while (!(Test-Path "$spsDir\*.sps.zip")) { Start-Sleep 5 }
+
+Stop-Process -ProcessName "SyMenu" -Force
+
+
+# Wait till crocess is building is finished
+#While (Get-Process -name "SyMenu" -ErrorAction SilentlyContinue) { Start-Sleep 5 }
+
+Expand-Archive -path "$spsDir\*.sps.zip" -DestinationPath "$spsDir\spsfiles" -force
+
+
+
+
+
 $db = @{}
 
-dir "$spsDir\*.sps" |% {
+dir "$spsDir\spsfiles\*.sps" | % {
 	[xml]$xml = [IO.File]::ReadAllText($_.fullname)
 	$app = $xml.SPSSchema
 	$name = $app.ProgramName
 
-	write-host $name.padright(50, ' ') ' ' -nonewline
+	Write-Host $name.padright(50, ' ') ' ' -NoNewline
 
 	$arch = if ($name.contains('x64')) { '64' } else { '' }
 
-	$id = $name -replace ' \(.+?\)',''
-	$id = $id.ToLower().trim() -replace ' portable','' -replace '[ _-]+','-' -replace '[^\w-]+',''
+	$id = $name -replace ' \(.+?\)', ''
+	$id = $id.ToLower().trim() -replace ' portable', '' -replace '[ _-]+', '-' -replace '[^\w-]+', ''
 
 	$dist = $app.DownloadUrl
 
@@ -67,25 +96,27 @@ dir "$spsDir\*.sps" |% {
 
 		if (([string]$res.ResponseUri).contains('./')) {
 			$res.close()
-			write-host 'LINK CONTAINS ./ (POWERSHELL BUG)' -f red
+			Write-Host 'LINK CONTAINS ./ (POWERSHELL BUG)' -f red
 			return
 		}
 
 		$res.close()
 
 		if ($contentType.contains('text/html')) {
-			write-host 'HTML page' $dist -f red
+			Write-Host 'HTML page' $dist -f red
 			return
 		}
 
-		write-host 'OK' -f green
-	} catch {
+		Write-Host 'OK' -f green
+	}
+ catch {
 		$msg = if ($_.Exception.InnerException) { $_.Exception.InnerException.Message } else { $_.Exception.Message }
 
 		if ($msg.contains('timed out')) {
-			write-host $msg $dist -f yellow
-		} else {
-			write-host $msg $dist -f red
+			Write-Host $msg $dist -f yellow
+		}
+		else {
+			Write-Host $msg $dist -f red
 			return
 		}
 	}
@@ -97,7 +128,7 @@ dir "$spsDir\*.sps" |% {
 	$db[$id]["dist$arch"] = $app.DownloadUrl
 
 	if ($app.UpdateNoCopyFiles) {
-		$db[$id]["keep$arch"] = ( ($app.UpdateNoCopyFiles -split ';') |% trim |% { $_.trim('/') } ) -join ', '
+		$db[$id]["keep$arch"] = ( ($app.UpdateNoCopyFiles -split ';') | % trim | % { $_.trim('/') } ) -join ', '
 	}
 
 	if ($app.CleanUpdate -eq 'false') {
@@ -105,16 +136,16 @@ dir "$spsDir\*.sps" |% {
 	}
 
 	if ($app.FirstInstallCreateFiles) {
-		$db[$id]["create$arch"] = (($app.FirstInstallCreateFiles -split ';') |% trim) -join ', '
+		$db[$id]["create$arch"] = (($app.FirstInstallCreateFiles -split ';') | % trim) -join ', '
 	}
 }
 
-del (join-path $targetDir '*.ini')
+del (Join-Path $targetDir '*.ini')
 
-$db.keys | sort |% {
+$db.keys | sort | % {
 	$id = $_
-	$ini = $db[$id].keys | sort |% { "$_ = $($db[$id][$_])" }
-	$ini -join "`r`n" | out-file -force (join-path $targetDir "$_.ini") -encoding ascii
+	$ini = $db[$id].keys | sort | % { "$_ = $($db[$id][$_])" }
+	$ini -join "`r`n" | Out-File -Force (Join-Path $targetDir "$_.ini") -Encoding ascii
 }
 
 #del -r -force $spsDir

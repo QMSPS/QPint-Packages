@@ -9,8 +9,8 @@ $dirs = @(
 	#($baseDir + 'packages\nirsoft')
 	#($baseDir + 'packages\portableapps')
 	#($baseDir + 'packages\portablefreeware')
-	($baseDir + 'packages\sordum')
-	#($baseDir + 'packages\symenu')
+	#$baseDir + 'packages\sordum')
+	($baseDir + 'packages\symenu')
 	#($baseDir + 'packages\sysinternals')
 
 
